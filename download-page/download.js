@@ -117,12 +117,12 @@
     if (ffmpegLoaded) return true;
 
     try {
-      if (typeof FFmpeg === 'undefined' || typeof FFmpegUtil === 'undefined') {
-        console.warn('ffmpeg.wasm CDN 未加载，跳过转码功能');
+      if (typeof FFmpegWASM === 'undefined' || typeof FFmpegUtil === 'undefined') {
+        console.warn('ffmpeg.wasm 未加载，跳过转码功能');
         return false;
       }
 
-      var FFmpegClass = FFmpeg.FFmpeg;
+      var FFmpegClass = FFmpegWASM.FFmpeg;
       ffmpegInstance = new FFmpegClass();
 
       ffmpegInstance.on('progress', function (info) {
@@ -132,22 +132,18 @@
         convertText.textContent = '正在转码... ' + percent + '%';
       });
 
-      var baseURL = './';
-      var toBlobURL = FFmpegUtil.toBlobURL;
+      // 直接使用文件 URL，避免大文件 fetch+Blob 导致内存问题
+      var wasmURL = 'ffmpeg-core.wasm';
+      var coreURL = 'ffmpeg-core.js';
 
-      // 从本地加载 ffmpeg-core.js 和 ffmpeg-core.wasm
-      var wasmBlobURL = await toBlobURL(baseURL + 'ffmpeg-core.wasm', 'application/wasm');
-
-      // ffmpeg-core.js 的 locateFile 会从 coreURL 的 # 后缀中解析 wasmURL
-      // 格式: blob:...#{"wasmURL":"blob:...","workerURL":""}
-      var configJSON = JSON.stringify({ wasmURL: wasmBlobURL, workerURL: '' });
+      // 将 wasmURL 编码到 coreURL 的 # 后缀中，供 locateFile 解析
+      var configJSON = JSON.stringify({ wasmURL: wasmURL, workerURL: '' });
       var configBase64 = btoa(configJSON);
-      var coreBlobURL = await toBlobURL(baseURL + 'ffmpeg-core.js', 'text/javascript');
-      var coreURLWithConfig = coreBlobURL + '#' + configBase64;
+      var coreURLWithConfig = coreURL + '#' + configBase64;
 
       await ffmpegInstance.load({
         coreURL: coreURLWithConfig,
-        wasmURL: wasmBlobURL,
+        wasmURL: wasmURL,
       });
 
       ffmpegLoaded = true;
