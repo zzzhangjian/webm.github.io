@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebM Downloader</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1 class="title">WebM Downloader</h1>
+      <button id="btn-clear" class="btn-text" title="清空列表">清空</button>
+    </header>
+
+    <div id="empty-state" class="empty-state">
+      <div class="empty-icon">🎬</div>
+      <p>当前页面未检测到 WebM 文件</p>
+      <button id="btn-refresh" class="btn-primary">重新检测</button>
+    </div>
+
+    <div id="webm-list" class="webm-list"></div>
+
+    <footer class="footer">
+      <span id="status-text">检测中...</span>
+    </footer>
+  </div>
+
+  <script src="popup.ts" type="module"></script>
+</body>
+</html>

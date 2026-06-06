@@ -1,0 +1,20 @@
+{
+  "name": "webm-downloader",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "VITE_PHASE=content vite build && vite build",
+    "build:chrome": "VITE_BROWSER=chrome VITE_PHASE=content vite build && VITE_BROWSER=chrome vite build",
+    "build:firefox": "VITE_BROWSER=firefox VITE_PHASE=content vite build && VITE_BROWSER=firefox vite build"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/node": "^20.12.12",
+    "@types/webextension-polyfill": "^0.10.7",
+    "typescript": "^5.4.5",
+    "vite": "^5.2.11",
+    "webextension-polyfill": "^0.12.0"
+  }
+}
