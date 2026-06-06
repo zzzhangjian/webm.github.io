@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebM Downloader - 下载</title>
+  <link rel="stylesheet" href="download.css">
+</head>
+<body>
+  <div class="container">
+    <header class="header">
+      <h1>WebM Downloader</h1>
+    </header>
+
+    <main class="main">
+      <!-- 视频预览 -->
+      <div class="preview">
+        <video id="video-player" controls></video>
+      </div>
+
+      <!-- 文件信息 -->
+      <div class="file-info">
+        <div class="info-row">
+          <span class="label">文件名</span>
+          <span id="file-name" class="value">-</span>
+        </div>
+        <div class="info-row">
+          <span class="label">大小</span>
+          <span id="file-size" class="value">-</span>
+        </div>
+        <div class="info-row">
+          <span class="label">时长</span>
+          <span id="file-duration" class="value">-</span>
+        </div>
+      </div>
+
+      <!-- 下载进度 -->
+      <div id="progress-section" class="progress-section">
+        <div class="progress-bar">
+          <div id="progress-fill" class="progress-fill" style="width: 0%"></div>
+        </div>
+        <div class="progress-info">
+          <span id="progress-text">准备下载...</span>
+          <span id="progress-percent">0%</span>
+        </div>
+      </div>
+
+      <!-- 错误信息 -->
+      <div id="error-section" class="error-section hidden">
+        <p id="error-message"></p>
+        <button id="btn-retry" class="btn-primary">重试</button>
+      </div>
+
+      <!-- 保存按钮 -->
+      <div class="actions">
+        <button id="btn-save" class="btn-save" disabled>
+          保存到本地
+        </button>
+      </div>
+    </main>
+  </div>
+
+  <script src="download.js"></script>
+</body>
+</html>
