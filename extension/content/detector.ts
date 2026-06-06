@@ -180,14 +180,14 @@ function observeDOMChanges(): void {
 function main(): void {
   runDetection();
   observeDOMChanges();
-
-  // 监听来自 Background 的检测触发消息（Tab 切换时）
-  onMessage((payload) => {
-    if (payload.type === 'TRIGGER_DETECTION') {
-      runDetection();
-    }
-  });
 }
+
+// 监听来自 Background 的检测触发消息（Tab 切换时），只注册一次
+onMessage((payload) => {
+  if (payload.type === 'TRIGGER_DETECTION') {
+    runDetection();
+  }
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', main);

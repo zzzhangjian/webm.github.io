@@ -115,7 +115,7 @@
     if (ffmpegLoaded) return true;
 
     try {
-      if (typeof FFmpeg === 'undefined' || typeof FFmpegWASMUtil === 'undefined') {
+      if (typeof FFmpeg === 'undefined' || typeof FFmpegUtil === 'undefined') {
         console.warn('ffmpeg.wasm CDN 未加载，跳过转码功能');
         return false;
       }
@@ -130,8 +130,8 @@
         convertText.textContent = '正在转码... ' + percent + '%';
       });
 
-      var baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
-      var toBlobURL = FFmpegWASMUtil.toBlobURL;
+      var baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd';
+      var toBlobURL = FFmpegUtil.toBlobURL;
 
       await ffmpegInstance.load({
         coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
@@ -279,7 +279,7 @@
 
       convertText.textContent = '正在写入文件...';
 
-      var fetchFile = FFmpegWASMUtil.fetchFile;
+      var fetchFile = FFmpegUtil.fetchFile;
       var inputData = await fetchFile(downloadedBlob);
       var inputName = 'input' + sourceExt;
       await ffmpegInstance.writeFile(inputName, inputData);
