@@ -26,4 +26,5 @@ export type MessagePayload =
   | { type: 'CLEAR_WEBM_LIST'; tabId: number }
   | { type: 'UPDATE_BADGE'; tabId: number; count: number }
   | { type: 'OPEN_DOWNLOAD_PAGE'; url: string; name: string; size: number | null }
+  | { type: 'TRIGGER_DETECTION' }
   | { type: 'TAB_UPDATED'; tabId: number };

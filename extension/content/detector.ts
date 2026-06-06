@@ -1,6 +1,6 @@
 import type { VideoResource, DetectionSource } from '../shared/types';
 import { generateResourceId, extractFileName, VIDEO_EXTENSIONS, VIDEO_MIME_TYPES, MUTATION_OBSERVER_CONFIG } from '../shared/constants';
-import { sendMessage } from '../shared/messaging';
+import { sendMessage, onMessage } from '../shared/messaging';
 
 // 当前标签页 ID（由 Background 注入）
 let currentTabId = 0;
@@ -180,6 +180,13 @@ function observeDOMChanges(): void {
 function main(): void {
   runDetection();
   observeDOMChanges();
+
+  // 监听来自 Background 的检测触发消息（Tab 切换时）
+  onMessage((payload) => {
+    if (payload.type === 'TRIGGER_DETECTION') {
+      runDetection();
+    }
+  });
 }
 
 if (document.readyState === 'loading') {

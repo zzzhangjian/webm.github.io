@@ -82,6 +82,13 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   }
 });
 
+// 切换 Tab 时触发视频检测
+chrome.tabs.onActivated.addListener((activeInfo) => {
+  sendTabMessage(activeInfo.tabId, { type: 'TRIGGER_DETECTION' }).catch(() => {
+    // content script 未注入时忽略（如 chrome:// 页面）
+  });
+});
+
 // 拦截网络请求中的视频资源
 chrome.webRequest.onHeadersReceived.addListener(
   (details) => {
