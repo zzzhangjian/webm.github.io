@@ -4,9 +4,42 @@ export const DOWNLOAD_PAGE_BASE_URL = 'https://zzzhangjian.github.io/webm.github
 
 export const BADGE_MAX_COUNT = 99;
 
-export const WEBM_EXTENSIONS = ['.webm'];
+// 支持的视频格式
+export const VIDEO_EXTENSIONS = [
+  '.webm', '.mp4', '.mkv', '.avi', '.mov', '.flv', '.wmv', '.m4v', '.ogv', '.3gp', '.ts', '.m3u8',
+];
 
-export const WEBM_MIME_TYPES = ['video/webm'];
+export const VIDEO_MIME_TYPES = [
+  'video/webm',
+  'video/mp4',
+  'video/x-matroska',    // mkv
+  'video/avi',
+  'video/x-msvideo',     // avi
+  'video/quicktime',     // mov
+  'video/x-flv',         // flv
+  'video/x-ms-wmv',      // wmv
+  'video/x-m4v',         // m4v
+  'video/ogg',           // ogv
+  'video/3gpp',          // 3gp
+  'video/mp2t',          // ts
+  'application/x-mpegurl', // m3u8
+  'application/vnd.apple.mpegurl', // m3u8
+];
+
+// 文件扩展名 → MIME 类型映射（用于下载页识别输入格式）
+export const EXT_TO_MIME: Record<string, string> = {
+  '.webm': 'video/webm',
+  '.mp4': 'video/mp4',
+  '.mkv': 'video/x-matroska',
+  '.avi': 'video/x-msvideo',
+  '.mov': 'video/quicktime',
+  '.flv': 'video/x-flv',
+  '.wmv': 'video/x-ms-wmv',
+  '.m4v': 'video/x-m4v',
+  '.ogv': 'video/ogg',
+  '.3gp': 'video/3gpp',
+  '.ts': 'video/mp2t',
+};
 
 export const MUTATION_OBSERVER_CONFIG: MutationObserverInit = {
   childList: true,
@@ -28,10 +61,10 @@ export function generateResourceId(url: string): string {
 export function extractFileName(url: string): string {
   try {
     const pathname = new URL(url).pathname;
-    const name = pathname.split('/').pop() || 'video.webm';
+    const name = pathname.split('/').pop() || 'video';
     return decodeURIComponent(name);
   } catch {
-    return 'video.webm';
+    return 'video';
   }
 }
 

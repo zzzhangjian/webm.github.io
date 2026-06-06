@@ -25,6 +25,10 @@
           <span id="file-name" class="value">-</span>
         </div>
         <div class="info-row">
+          <span class="label">源格式</span>
+          <span id="file-format" class="value">-</span>
+        </div>
+        <div class="info-row">
           <span class="label">大小</span>
           <span id="file-size" class="value">-</span>
         </div>
@@ -39,12 +43,16 @@
         <div class="format-label">输出格式</div>
         <div class="format-options">
           <label class="format-option">
-            <input type="radio" name="output-format" value="webm" checked>
-            <span class="format-badge">WebM</span>
+            <input type="radio" name="output-format" value="keep" checked>
+            <span class="format-badge">保持原格式</span>
           </label>
           <label class="format-option">
             <input type="radio" name="output-format" value="mp4">
             <span class="format-badge">MP4</span>
+          </label>
+          <label class="format-option">
+            <input type="radio" name="output-format" value="webm">
+            <span class="format-badge">WebM</span>
           </label>
           <label class="format-option">
             <input type="radio" name="output-format" value="mov">
@@ -53,6 +61,10 @@
           <label class="format-option">
             <input type="radio" name="output-format" value="avi">
             <span class="format-badge">AVI</span>
+          </label>
+          <label class="format-option">
+            <input type="radio" name="output-format" value="mkv">
+            <span class="format-badge">MKV</span>
           </label>
         </div>
       </div>

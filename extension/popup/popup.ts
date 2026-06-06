@@ -1,4 +1,4 @@
-import type { WebMResource } from '../shared/types';
+import type { VideoResource } from '../shared/types';
 import { formatFileSize, formatDuration } from '../shared/constants';
 
 const listEl = document.getElementById('webm-list')!;
@@ -23,24 +23,24 @@ async function loadWebMList(): Promise<void> {
     tabId: tab.id,
   });
 
-  const resources = (response as WebMResource[]) || [];
+  const resources = (response as VideoResource[]) || [];
   renderList(resources);
 }
 
 // 渲染列表
-function renderList(resources: WebMResource[]): void {
+function renderList(resources: VideoResource[]): void {
   listEl.innerHTML = '';
 
   if (resources.length === 0) {
     emptyEl.classList.remove('hidden');
     listEl.classList.add('hidden');
-    statusEl.textContent = '未检测到 WebM 文件';
+    statusEl.textContent = '未检测到视频文件';
     return;
   }
 
   emptyEl.classList.add('hidden');
   listEl.classList.remove('hidden');
-  statusEl.textContent = `检测到 ${resources.length} 个 WebM 文件`;
+  statusEl.textContent = `检测到 ${resources.length} 个视频文件`;
 
   resources.forEach((resource) => {
     const item = createListItem(resource);
@@ -49,7 +49,7 @@ function renderList(resources: WebMResource[]): void {
 }
 
 // 创建列表项
-function createListItem(resource: WebMResource): HTMLElement {
+function createListItem(resource: VideoResource): HTMLElement {
   const item = document.createElement('div');
   item.className = 'webm-item';
 
@@ -111,7 +111,7 @@ function createListItem(resource: WebMResource): HTMLElement {
 }
 
 // 下载处理
-async function handleDownload(resource: WebMResource): Promise<void> {
+async function handleDownload(resource: VideoResource): Promise<void> {
   await chrome.runtime.sendMessage({
     type: 'OPEN_DOWNLOAD_PAGE',
     url: resource.url,

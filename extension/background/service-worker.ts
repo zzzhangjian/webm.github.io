@@ -1,9 +1,9 @@
-import type { WebMResource, MessagePayload } from '../shared/types';
-import { BADGE_MAX_COUNT, DOWNLOAD_PAGE_BASE_URL } from '../shared/constants';
+import type { VideoResource, MessagePayload } from '../shared/types';
+import { BADGE_MAX_COUNT, DOWNLOAD_PAGE_BASE_URL, VIDEO_MIME_TYPES } from '../shared/constants';
 import { onMessage, sendTabMessage } from '../shared/messaging';
 
-// 按标签页存储 WebM 资源
-const tabResources = new Map<number, WebMResource[]>();
+// 按标签页存储视频资源
+const tabResources = new Map<number, VideoResource[]>();
 
 // 更新 Badge
 function updateBadge(tabId: number, count: number): void {
@@ -12,7 +12,6 @@ function updateBadge(tabId: number, count: number): void {
     chrome.action.setBadgeText({ text, tabId });
     chrome.action.setBadgeBackgroundColor({ color: '#E53935', tabId });
   } catch {
-    // Firefox fallback
     try {
       browser.action.setBadgeText({ text, tabId });
       browser.action.setBadgeBackgroundColor({ color: '#E53935', tabId });
@@ -22,7 +21,6 @@ function updateBadge(tabId: number, count: number): void {
   }
 }
 
-// 获取当前标签页 ID
 function getTabId(sender: chrome.runtime.MessageSender): number {
   return sender.tab?.id ?? 0;
 }
@@ -34,7 +32,6 @@ onMessage((payload: MessagePayload, sender) => {
   switch (payload.type) {
     case 'WEBM_DETECTED': {
       const existing = tabResources.get(tabId) || [];
-      // 合并去重
       const existingIds = new Set(existing.map((r) => r.id));
       const newResources = payload.resources.filter((r) => !existingIds.has(r.id));
       const merged = [...existing, ...newResources];
@@ -85,16 +82,20 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo) => {
   }
 });
 
-// 拦截网络请求中的 WebM 资源
+// 拦截网络请求中的视频资源
 chrome.webRequest.onHeadersReceived.addListener(
   (details) => {
-    if (details.type !== 'xmlhttprequest' && details.tabId < 0) return;
+    if (details.tabId < 0) return;
 
     const contentType = details.responseHeaders?.find(
       (h) => h.name.toLowerCase() === 'content-type',
     );
-    if (contentType?.value?.includes('video/webm')) {
-      // 通知 Content Script 发现新资源
+    if (!contentType?.value) return;
+
+    const mime = contentType.value.toLowerCase();
+    const isVideo = VIDEO_MIME_TYPES.some((vm) => mime.includes(vm));
+
+    if (isVideo) {
       sendTabMessage(details.tabId, {
         type: 'WEBM_DETECTED',
         resources: [{
@@ -128,10 +129,10 @@ function generateResourceId(url: string): string {
 function extractFileName(url: string): string {
   try {
     const pathname = new URL(url).pathname;
-    const name = pathname.split('/').pop() || 'video.webm';
+    const name = pathname.split('/').pop() || 'video';
     return decodeURIComponent(name);
   } catch {
-    return 'video.webm';
+    return 'video';
   }
 }
 
