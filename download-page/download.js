@@ -132,9 +132,9 @@
         convertText.textContent = '正在转码... ' + percent + '%';
       });
 
-      // 直接使用文件 URL，避免大文件 fetch+Blob 导致内存问题
-      var wasmURL = 'ffmpeg-core.wasm';
-      var coreURL = 'ffmpeg-core.js';
+      // 使用基于当前页面 URL 的绝对路径，避免非根目录访问时 404
+      var wasmURL = new URL('ffmpeg-core.wasm', window.location.href).href;
+      var coreURL = new URL('ffmpeg-core.js', window.location.href).href;
 
       // 将 wasmURL 编码到 coreURL 的 # 后缀中，供 locateFile 解析
       var configJSON = JSON.stringify({ wasmURL: wasmURL, workerURL: '' });
