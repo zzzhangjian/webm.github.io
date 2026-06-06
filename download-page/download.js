@@ -135,9 +135,19 @@
       var baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.10/dist/umd';
       var toBlobURL = FFmpegUtil.toBlobURL;
 
+      // 先获取 wasm 的 blob URL
+      var wasmBlobURL = await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm');
+
+      // ffmpeg-core.js 的 locateFile 会从 coreURL 的 # 后缀中解析 wasmURL
+      // 格式: blob:...#{"wasmURL":"blob:...","workerURL":""}
+      var configJSON = JSON.stringify({ wasmURL: wasmBlobURL, workerURL: '' });
+      var configBase64 = btoa(configJSON);
+      var coreBlobURL = await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript');
+      var coreURLWithConfig = coreBlobURL + '#' + configBase64;
+
       await ffmpegInstance.load({
-        coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
-        wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm'),
+        coreURL: coreURLWithConfig,
+        wasmURL: wasmBlobURL,
       });
 
       ffmpegLoaded = true;
