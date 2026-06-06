@@ -189,6 +189,13 @@ onMessage((payload) => {
   }
 });
 
+// 页面可见性变化时触发检测（覆盖 onActivated 无法捕获的场景：从其他应用切回浏览器）
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') {
+    runDetection();
+  }
+});
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', main);
 } else {

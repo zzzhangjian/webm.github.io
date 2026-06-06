@@ -33,6 +33,8 @@
   var outputFileName = fileName;
   var ffmpegInstance = null;
   var ffmpegLoaded = false;
+  var downloadCompleted = false;
+  var converting = false;
 
   // 从文件名提取扩展名
   function getExtension(name) {
@@ -162,15 +164,24 @@
       fileDurationEl.textContent = formatDuration(videoPlayer.duration);
     });
 
-    // 格式切换时更新文件名预览
+    // 格式切换时更新文件名预览，下载完成后自动触发转码
     formatRadios.forEach(function (radio) {
       radio.addEventListener('change', function () {
         var fmt = getSelectedFormat();
         if (fmt === 'keep') {
           fileNameEl.textContent = fileName;
+          if (downloadCompleted && !converting) {
+            outputBlob = downloadedBlob;
+            outputFileName = fileName;
+            convertSection.classList.add('hidden');
+            btnSave.disabled = false;
+          }
         } else {
           var config = FORMAT_CONFIG[fmt];
           fileNameEl.textContent = replaceExtension(fileName, config.ext);
+          if (downloadCompleted && !converting && needsConversion(fmt)) {
+            convertFormat(fmt);
+          }
         }
       });
     });
@@ -237,6 +248,7 @@
 
   // 下载完成
   async function onDownloadComplete(blob) {
+    downloadCompleted = true;
     progressFill.style.width = '100%';
     progressPercent.textContent = '100%';
     progressText.textContent = '下载完成! ' + formatFileSize(blob.size);
@@ -259,6 +271,7 @@
   async function convertFormat(fmt) {
     var config = FORMAT_CONFIG[fmt];
     outputFileName = replaceExtension(fileName, config.ext);
+    converting = true;
 
     convertSection.classList.remove('hidden');
     convertFill.style.width = '0%';
@@ -273,6 +286,7 @@
         convertText.textContent = '转码引擎加载失败，将保存为原始格式';
         outputBlob = downloadedBlob;
         outputFileName = fileName;
+        converting = false;
         btnSave.disabled = false;
         return;
       }
@@ -312,12 +326,14 @@
       convertPercent.textContent = '100%';
       convertText.textContent = '转码完成! ' + formatFileSize(outputBlob.size);
 
+      converting = false;
       btnSave.disabled = false;
     } catch (err) {
       console.error('转码失败:', err);
       convertText.textContent = '转码失败: ' + (err.message || '未知错误') + '，将保存为原始格式';
       outputBlob = downloadedBlob;
       outputFileName = fileName;
+      converting = false;
       btnSave.disabled = false;
     }
   }
