@@ -1,6 +1,6 @@
 // 常量定义
 
-export const DOWNLOAD_PAGE_BASE_URL = 'https://zzzhangjian.github.io/webm.github.io/';
+export const DOWNLOAD_PAGE_BASE_URL = 'https://zzzhangjian.github.io/webm.github.io/download-page/';
 
 export const BADGE_MAX_COUNT = 99;
 

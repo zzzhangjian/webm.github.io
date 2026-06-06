@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WebM Downloader - 下载</title>
+  <title>Video Downloader - 下载</title>
   <link rel="stylesheet" href="download.css">
 </head>
 <body>
   <div class="container">
     <header class="header">
-      <h1>WebM Downloader</h1>
+      <h1>Video Downloader</h1>
     </header>
 
     <main class="main">
@@ -34,6 +34,29 @@
         </div>
       </div>
 
+      <!-- 格式选择 -->
+      <div id="format-section" class="format-section">
+        <div class="format-label">输出格式</div>
+        <div class="format-options">
+          <label class="format-option">
+            <input type="radio" name="output-format" value="webm" checked>
+            <span class="format-badge">WebM</span>
+          </label>
+          <label class="format-option">
+            <input type="radio" name="output-format" value="mp4">
+            <span class="format-badge">MP4</span>
+          </label>
+          <label class="format-option">
+            <input type="radio" name="output-format" value="mov">
+            <span class="format-badge">MOV</span>
+          </label>
+          <label class="format-option">
+            <input type="radio" name="output-format" value="avi">
+            <span class="format-badge">AVI</span>
+          </label>
+        </div>
+      </div>
+
       <!-- 下载进度 -->
       <div id="progress-section" class="progress-section">
         <div class="progress-bar">
@@ -42,6 +65,17 @@
         <div class="progress-info">
           <span id="progress-text">准备下载...</span>
           <span id="progress-percent">0%</span>
+        </div>
+      </div>
+
+      <!-- 转码进度 -->
+      <div id="convert-section" class="progress-section hidden">
+        <div class="progress-bar">
+          <div id="convert-fill" class="progress-fill convert" style="width: 0%"></div>
+        </div>
+        <div class="progress-info">
+          <span id="convert-text">准备转码...</span>
+          <span id="convert-percent">0%</span>
         </div>
       </div>
 
@@ -60,6 +94,9 @@
     </main>
   </div>
 
+  <!-- ffmpeg.wasm 从 CDN 加载 -->
+  <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/umd/ffmpeg.js"></script>
+  <script src="https://unpkg.com/@ffmpeg/util@0.12.1/dist/umd/util.js"></script>
   <script src="download.js"></script>
 </body>
 </html>

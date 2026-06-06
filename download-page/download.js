@@ -2,27 +2,52 @@
   'use strict';
 
   // DOM 元素
-  const videoPlayer = document.getElementById('video-player');
-  const fileNameEl = document.getElementById('file-name');
-  const fileSizeEl = document.getElementById('file-size');
-  const fileDurationEl = document.getElementById('file-duration');
-  const progressSection = document.getElementById('progress-section');
-  const progressFill = document.getElementById('progress-fill');
-  const progressText = document.getElementById('progress-text');
-  const progressPercent = document.getElementById('progress-percent');
-  const errorSection = document.getElementById('error-section');
-  const errorMessage = document.getElementById('error-message');
-  const btnRetry = document.getElementById('btn-retry');
-  const btnSave = document.getElementById('btn-save');
+  var videoPlayer = document.getElementById('video-player');
+  var fileNameEl = document.getElementById('file-name');
+  var fileSizeEl = document.getElementById('file-size');
+  var fileDurationEl = document.getElementById('file-duration');
+  var progressSection = document.getElementById('progress-section');
+  var progressFill = document.getElementById('progress-fill');
+  var progressText = document.getElementById('progress-text');
+  var progressPercent = document.getElementById('progress-percent');
+  var convertSection = document.getElementById('convert-section');
+  var convertFill = document.getElementById('convert-fill');
+  var convertText = document.getElementById('convert-text');
+  var convertPercent = document.getElementById('convert-percent');
+  var errorSection = document.getElementById('error-section');
+  var errorMessage = document.getElementById('error-message');
+  var btnRetry = document.getElementById('btn-retry');
+  var btnSave = document.getElementById('btn-save');
+  var formatRadios = document.querySelectorAll('input[name="output-format"]');
 
-  // 解析 URL 参数
-  const params = new URLSearchParams(window.location.search);
-  const webmUrl = params.get('url');
-  const fileName = params.get('name') || 'video.webm';
-  const fileSize = params.get('size') ? parseInt(params.get('size'), 10) : null;
+  // URL 参数
+  var params = new URLSearchParams(window.location.search);
+  var webmUrl = params.get('url');
+  var fileName = params.get('name') || 'video.webm';
+  var fileSize = params.get('size') ? parseInt(params.get('size'), 10) : null;
 
-  // 下载状态
-  let downloadedBlob = null;
+  // 状态
+  var downloadedBlob = null;
+  var outputBlob = null;
+  var outputFileName = fileName;
+  var ffmpegInstance = null;
+  var ffmpegLoaded = false;
+
+  // 格式配置：扩展名 → FFmpeg 编码参数
+  var FORMAT_CONFIG = {
+    webm: { ext: '.webm', codec: 'copy', mimeType: 'video/webm' },
+    mp4: { ext: '.mp4', codec: '-c:v libx264 -preset fast -crf 23 -c:a aac', mimeType: 'video/mp4' },
+    mov: { ext: '.mov', codec: '-c:v libx264 -preset fast -crf 23 -c:a aac -f mov', mimeType: 'video/quicktime' },
+    avi: { ext: '.avi', codec: '-c:v libx264 -preset fast -crf 23 -c:a mp3 -f avi', mimeType: 'video/x-msvideo' },
+  };
+
+  // 获取当前选择的格式
+  function getSelectedFormat() {
+    for (var i = 0; i < formatRadios.length; i++) {
+      if (formatRadios[i].checked) return formatRadios[i].value;
+    }
+    return 'webm';
+  }
 
   // 格式化文件大小
   function formatFileSize(bytes) {
@@ -45,6 +70,52 @@
     return m + ':' + String(s).padStart(2, '0');
   }
 
+  // 替换文件扩展名
+  function replaceExtension(name, newExt) {
+    var lastDot = name.lastIndexOf('.');
+    var baseName = lastDot > 0 ? name.substring(0, lastDot) : name;
+    return baseName + newExt;
+  }
+
+  // 初始化 ffmpeg.wasm
+  async function initFFmpeg() {
+    if (ffmpegLoaded) return true;
+
+    try {
+      // 检查 CDN 是否加载成功
+      if (typeof FFmpeg === 'undefined' || typeof FFmpegWASMUtil === 'undefined') {
+        console.warn('ffmpeg.wasm CDN 未加载，跳过转码功能');
+        return false;
+      }
+
+      var FFmpegClass = FFmpeg.FFmpeg;
+      ffmpegInstance = new FFmpegClass();
+
+      // 监听转码进度
+      ffmpegInstance.on('progress', function (info) {
+        var percent = Math.min(Math.round(info.progress * 100), 100);
+        convertFill.style.width = percent + '%';
+        convertPercent.textContent = percent + '%';
+        convertText.textContent = '正在转码... ' + percent + '%';
+      });
+
+      // 加载核心（单线程版本，无需 SharedArrayBuffer）
+      var baseURL = 'https://unpkg.com/@ffmpeg/core@0.12.6/dist/umd';
+      var toBlobURL = FFmpegWASMUtil.toBlobURL;
+
+      await ffmpegInstance.load({
+        coreURL: await toBlobURL(baseURL + '/ffmpeg-core.js', 'text/javascript'),
+        wasmURL: await toBlobURL(baseURL + '/ffmpeg-core.wasm', 'application/wasm'),
+      });
+
+      ffmpegLoaded = true;
+      return true;
+    } catch (err) {
+      console.error('ffmpeg.wasm 加载失败:', err);
+      return false;
+    }
+  }
+
   // 初始化页面
   function init() {
     if (!webmUrl) {
@@ -52,61 +123,67 @@
       return;
     }
 
-    // 填充文件信息
     fileNameEl.textContent = fileName;
     fileSizeEl.textContent = formatFileSize(fileSize);
 
-    // 设置视频源
     videoPlayer.src = webmUrl;
     videoPlayer.addEventListener('loadedmetadata', function () {
       fileDurationEl.textContent = formatDuration(videoPlayer.duration);
     });
 
-    // 自动开始下载
+    // 格式切换时更新文件名预览
+    formatRadios.forEach(function (radio) {
+      radio.addEventListener('change', function () {
+        var fmt = getSelectedFormat();
+        var config = FORMAT_CONFIG[fmt];
+        fileNameEl.textContent = replaceExtension(fileName, config.ext);
+      });
+    });
+
     startDownload();
   }
 
   // 开始下载
   async function startDownload() {
     progressSection.style.display = 'block';
+    convertSection.classList.add('hidden');
     errorSection.classList.add('hidden');
     btnSave.disabled = true;
+    outputBlob = null;
     progressText.textContent = '正在下载...';
     progressFill.style.width = '0%';
     progressPercent.textContent = '0%';
 
     try {
-      const response = await fetch(webmUrl);
+      var response = await fetch(webmUrl);
 
       if (!response.ok) {
         throw new Error('下载失败: HTTP ' + response.status);
       }
 
-      const contentLength = response.headers.get('content-length');
-      const total = contentLength ? parseInt(contentLength, 10) : fileSize;
+      var contentLength = response.headers.get('content-length');
+      var total = contentLength ? parseInt(contentLength, 10) : fileSize;
 
       if (!response.body) {
-        // 不支持 ReadableStream，使用传统方式
-        const blob = await response.blob();
+        var blob = await response.blob();
         downloadedBlob = blob;
         onDownloadComplete(blob);
         return;
       }
 
-      // 使用 ReadableStream 读取进度
-      const reader = response.body.getReader();
-      const chunks = [];
-      let receivedLength = 0;
+      var reader = response.body.getReader();
+      var chunks = [];
+      var receivedLength = 0;
 
       while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
+        var result = await reader.read();
+        if (result.done) break;
 
-        chunks.push(value);
-        receivedLength += value.length;
+        chunks.push(result.value);
+        receivedLength += result.value.length;
 
         if (total) {
-          const percent = Math.round((receivedLength / total) * 100);
+          var percent = Math.round((receivedLength / total) * 100);
           progressFill.style.width = percent + '%';
           progressPercent.textContent = percent + '%';
           progressText.textContent = '正在下载... ' + formatFileSize(receivedLength) + ' / ' + formatFileSize(total);
@@ -115,40 +192,118 @@
         }
       }
 
-      // 合并 chunks
-      const blob = new Blob(chunks, { type: 'video/webm' });
-      downloadedBlob = blob;
-      onDownloadComplete(blob);
+      var mergedBlob = new Blob(chunks, { type: 'video/webm' });
+      downloadedBlob = mergedBlob;
+      onDownloadComplete(mergedBlob);
     } catch (err) {
       showError('下载失败: ' + (err.message || '未知错误'));
     }
   }
 
   // 下载完成
-  function onDownloadComplete(blob) {
+  async function onDownloadComplete(blob) {
     progressFill.style.width = '100%';
     progressPercent.textContent = '100%';
     progressText.textContent = '下载完成! ' + formatFileSize(blob.size);
     fileSizeEl.textContent = formatFileSize(blob.size);
-    btnSave.disabled = false;
 
-    // 更新视频源为 blob URL（避免重复请求）
+    // 更新视频源为 blob URL
     videoPlayer.src = URL.createObjectURL(blob);
+
+    // 根据选择的格式决定是否需要转码
+    var fmt = getSelectedFormat();
+    if (fmt === 'webm') {
+      // WebM 无需转码，直接可用
+      outputBlob = downloadedBlob;
+      outputFileName = fileName;
+      btnSave.disabled = false;
+    } else {
+      // 需要转码
+      await convertFormat(fmt);
+    }
+  }
+
+  // 格式转码
+  async function convertFormat(fmt) {
+    var config = FORMAT_CONFIG[fmt];
+    outputFileName = replaceExtension(fileName, config.ext);
+
+    convertSection.classList.remove('hidden');
+    convertFill.style.width = '0%';
+    convertPercent.textContent = '0%';
+    convertText.textContent = '正在加载转码引擎...';
+    btnSave.disabled = true;
+
+    try {
+      var ffmpegReady = await initFFmpeg();
+
+      if (!ffmpegReady) {
+        // ffmpeg 加载失败，回退为直接保存 WebM
+        convertText.textContent = '转码引擎加载失败，将保存为原始 WebM 格式';
+        outputBlob = downloadedBlob;
+        outputFileName = fileName;
+        btnSave.disabled = false;
+        return;
+      }
+
+      convertText.textContent = '正在写入文件...';
+
+      // 写入输入文件
+      var fetchFile = FFmpegWASMUtil.fetchFile;
+      var inputData = await fetchFile(downloadedBlob);
+      await ffmpegInstance.writeFile('input.webm', inputData);
+
+      // 执行转码
+      convertText.textContent = '正在转码...';
+
+      var codecParts = config.codec.split(' ');
+      var ffmpegArgs = ['-i', 'input.webm'];
+      for (var i = 0; i < codecParts.length; i++) {
+        ffmpegArgs.push(codecParts[i]);
+      }
+      ffmpegArgs.push('output' + config.ext);
+
+      await ffmpegInstance.exec(ffmpegArgs);
+
+      // 读取输出文件
+      var outputData = await ffmpegInstance.readFile('output' + config.ext);
+      outputBlob = new Blob([outputData.buffer], { type: config.mimeType });
+
+      // 清理临时文件
+      try {
+        await ffmpegInstance.deleteFile('input.webm');
+        await ffmpegInstance.deleteFile('output' + config.ext);
+      } catch (e) {
+        // 忽略清理错误
+      }
+
+      convertFill.style.width = '100%';
+      convertPercent.textContent = '100%';
+      convertText.textContent = '转码完成! ' + formatFileSize(outputBlob.size);
+
+      btnSave.disabled = false;
+    } catch (err) {
+      console.error('转码失败:', err);
+      convertText.textContent = '转码失败: ' + (err.message || '未知错误') + '，将保存为原始 WebM 格式';
+      outputBlob = downloadedBlob;
+      outputFileName = fileName;
+      btnSave.disabled = false;
+    }
   }
 
   // 保存到本地
   function saveToLocal() {
-    if (!downloadedBlob) return;
+    var blobToSave = outputBlob || downloadedBlob;
+    if (!blobToSave) return;
 
-    const url = URL.createObjectURL(downloadedBlob);
-    const a = document.createElement('a');
+    var url = URL.createObjectURL(blobToSave);
+    var a = document.createElement('a');
     a.href = url;
-    a.download = fileName;
+    a.download = outputFileName;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 
-    // 延迟释放，确保下载已启动
     setTimeout(function () {
       URL.revokeObjectURL(url);
     }, 1000);
